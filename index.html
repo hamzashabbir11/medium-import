@@ -13,56 +13,105 @@
                     <h1>Optimizing Large-Scale Search with Amazon OpenSearch and Vector Databases</h1>
                 </div>
                 <p class="pw-post-body-paragraph">
-                    With the rise of AI-driven applications, traditional keyword-based search engines often fail to provide relevant results. Enter <strong>hybrid search</strong>—a combination of traditional search techniques and vector-based similarity search, leveraging Amazon OpenSearch Service and vector databases like Pinecone or FAISS.
+                    With the rise of AI-driven applications, traditional keyword-based search engines often fail to provide relevant results. Enter <strong>hybrid search</strong>—a combination of traditional search techniques and vector-based similarity search, leveraging Amazon OpenSearch Service and vector databases like Pinecone or FAISS. This article explores how to build a scalable search system using OpenSearch's k-NN (k-nearest neighbors) feature for fast and accurate retrieval.
                 </p>
+                
+                <h2>Why Hybrid Search?</h2>
                 <p class="pw-post-body-paragraph">
                     Hybrid search combines <strong>BM25 full-text search</strong> (best for keyword relevance) with <strong>vector search</strong> (best for contextual relevance). This is particularly useful for:
                 </p>
                 <ul>
-                    <li>E-commerce recommendations (e.g., "find similar products")</li>
-                    <li>Semantic document retrieval (e.g., "find articles about cloud security")</li>
-                    <li>Multimodal search (e.g., combining text and image search)</li>
+                    <li><strong>E-commerce recommendations</strong> (e.g., "find similar products")</li>
+                    <li><strong>Semantic document retrieval</strong> (e.g., "find articles about cloud security")</li>
+                    <li><strong>Multimodal search</strong> (e.g., combining text and image search)</li>
                 </ul>
-                <p class="pw-post-body-paragraph">
-                    This article explores how to build a scalable search system using OpenSearch's k-NN (k-nearest neighbors) feature for fast and accurate retrieval.
-                </p>
+                
                 <h2>Setting Up Amazon OpenSearch for k-NN Search</h2>
+                <h3>1. Create an OpenSearch Domain</h3>
                 <p class="pw-post-body-paragraph">
-                    To enable vector search, convert text data into numerical vectors using an embedding model like OpenAI’s <code>text-embedding-ada-002</code> or AWS Bedrock.
+                    First, create an OpenSearch cluster with the following specifications:
                 </p>
-                <p class="pw-post-body-paragraph">
-                    <strong>Example: Using <code>sentence-transformers</code></strong>
-                </p>
-                <pre>
-<code>
-from sentence_transformers import SentenceTransformer
+                <ul>
+                    <li><strong>Instance type:</strong> <code>r6g.large.search</code> (optimized for ML workloads)</li>
+                    <li><strong>Version:</strong> OpenSearch 2.x (supports k-NN)</li>
+                    <li><strong>Storage:</strong> At least 50 GB (depends on dataset size)</li>
+                </ul>
+                <pre><code>aws opensearch create-domain \
+  --domain-name my-opensearch-domain \
+  --engine-version OpenSearch_2.3 \
+  --cluster-config InstanceType=r6g.large.search,InstanceCount=2 \
+  --ebs-options EBSEnabled=true,VolumeSize=50</code></pre>
+                
+                <h3>2. Define the Index Mapping</h3>
+                <pre><code>PUT my-knn-index
+{
+  "settings": {
+    "index.knn": true
+  },
+  "mappings": {
+    "properties": {
+      "text": { "type": "text" },
+      "embedding": {
+        "type": "knn_vector",
+        "dimension": 768,
+        "method": { "name": "hnsw", "space_type": "cosinesimil", "engine": "faiss" }
+      }
+    }
+  }
+}</code></pre>
+                
+                <h3>3. Generate and Store Embeddings</h3>
+                <pre><code>from sentence_transformers import SentenceTransformer
 import requests
 
 model = SentenceTransformer("all-MiniLM-L6-v2")
 text = "Find me similar AWS articles"
 vector = model.encode(text).tolist()
 
-# Store in OpenSearch
 requests.post("https://your-opensearch-endpoint/my-knn-index/_doc", json={
     "text": text,
     "embedding": vector
-})
-</code>
-                </pre>
+})</code></pre>
+                
+                <h3>4. Perform a Hybrid Search</h3>
+                <pre><code>POST my-knn-index/_search
+{
+  "size": 5,
+  "query": {
+    "bool": {
+      "should": [
+        { "match": { "text": "AWS security best practices" }},
+        { "knn": {
+          "embedding": {
+            "vector": [0.1, 0.3, ..., -0.2],
+            "k": 3,
+            "num_candidates": 100
+          }
+        }}
+      ]
+    }
+  }
+}</code></pre>
+                
+                <h2>Scaling Considerations</h2>
+                <ul>
+                    <li><strong>Use Approximate Nearest Neighbors (ANN):</strong> OpenSearch’s <strong>HNSW</strong> algorithm speeds up queries without exhaustive brute-force comparisons.</li>
+                    <li><strong>Optimize Cluster Size:</strong> Adjust <strong>shards & replicas</strong> based on workload.</li>
+                    <li><strong>Periodic Re-indexing:</strong> As new data arrives, update embeddings to maintain relevance.</li>
+                    <li><strong>Use AWS Lambda for Auto-Indexing:</strong> Automate embedding updates using an AWS Lambda function triggered by new data in DynamoDB or S3.</li>
+                </ul>
+                
+                <h2>Conclusion</h2>
                 <p class="pw-post-body-paragraph">
                     Hybrid search with OpenSearch and vector databases enables more intelligent and scalable search systems. By integrating <strong>BM25 for traditional relevance ranking</strong> and <strong>k-NN for contextual similarity</strong>, you can power next-gen applications across multiple industries.
                 </p>
-                <p class="pw-post-body-paragraph">
-                    <strong>Next Steps:</strong>
-                </p>
+                <h3>Next Steps:</h3>
                 <ul>
                     <li>Try integrating <strong>AWS Bedrock</strong> embeddings for even better search accuracy.</li>
                     <li>Experiment with <strong>Pinecone or Weaviate</strong> for external vector storage.</li>
                     <li>Optimize search latencies with <strong>shard-aware routing</strong> and <strong>query caching</strong>.</li>
                 </ul>
-                <p class="pw-post-body-paragraph">
-                    Happy searching! 🚀
-                </p>
+                <p class="pw-post-body-paragraph">Happy searching! 🚀</p>
             </section>
         </article>
     </main>

@@ -10,27 +10,58 @@
         <article>
             <section>
                 <div class="pw-post-title">
-                    <h1>Backdating your Medium posts!</h1>
+                    <h1>Optimizing Large-Scale Search with Amazon OpenSearch and Vector Databases</h1>
                 </div>
                 <p class="pw-post-body-paragraph">
-                    This is a test HTML page that you can import to Medium as 
-                    a template to backdate your post.
+                    With the rise of AI-driven applications, traditional keyword-based search engines often fail to provide relevant results. Enter <strong>hybrid search</strong>—a combination of traditional search techniques and vector-based similarity search, leveraging Amazon OpenSearch Service and vector databases like Pinecone or FAISS.
                 </p>
                 <p class="pw-post-body-paragraph">
-                    You'll know when you've successfully backdated your post
-                    by looking at the bottom of your article when you import
-                    to Medium: it should say something like: "Originally 
-                    published at *** on [Whatever your date is]."
+                    Hybrid search combines <strong>BM25 full-text search</strong> (best for keyword relevance) with <strong>vector search</strong> (best for contextual relevance). This is particularly useful for:
+                </p>
+                <ul>
+                    <li>E-commerce recommendations (e.g., "find similar products")</li>
+                    <li>Semantic document retrieval (e.g., "find articles about cloud security")</li>
+                    <li>Multimodal search (e.g., combining text and image search)</li>
+                </ul>
+                <p class="pw-post-body-paragraph">
+                    This article explores how to build a scalable search system using OpenSearch's k-NN (k-nearest neighbors) feature for fast and accurate retrieval.
+                </p>
+                <h2>Setting Up Amazon OpenSearch for k-NN Search</h2>
+                <p class="pw-post-body-paragraph">
+                    To enable vector search, convert text data into numerical vectors using an embedding model like OpenAI’s <code>text-embedding-ada-002</code> or AWS Bedrock.
                 </p>
                 <p class="pw-post-body-paragraph">
-                    If you enjoyed this tutorial and method, please 
-                    drop me a follow on 
-                    <a href="https://liaogg.medium.com">Medium</a>
-                    and 
-                    <a href="https://github.com/kevinMEH">Github.</a>
+                    <strong>Example: Using <code>sentence-transformers</code></strong>
+                </p>
+                <pre>
+<code>
+from sentence_transformers import SentenceTransformer
+import requests
+
+model = SentenceTransformer("all-MiniLM-L6-v2")
+text = "Find me similar AWS articles"
+vector = model.encode(text).tolist()
+
+# Store in OpenSearch
+requests.post("https://your-opensearch-endpoint/my-knn-index/_doc", json={
+    "text": text,
+    "embedding": vector
+})
+</code>
+                </pre>
+                <p class="pw-post-body-paragraph">
+                    Hybrid search with OpenSearch and vector databases enables more intelligent and scalable search systems. By integrating <strong>BM25 for traditional relevance ranking</strong> and <strong>k-NN for contextual similarity</strong>, you can power next-gen applications across multiple industries.
                 </p>
                 <p class="pw-post-body-paragraph">
-                    Thanks, and bye!
+                    <strong>Next Steps:</strong>
+                </p>
+                <ul>
+                    <li>Try integrating <strong>AWS Bedrock</strong> embeddings for even better search accuracy.</li>
+                    <li>Experiment with <strong>Pinecone or Weaviate</strong> for external vector storage.</li>
+                    <li>Optimize search latencies with <strong>shard-aware routing</strong> and <strong>query caching</strong>.</li>
+                </ul>
+                <p class="pw-post-body-paragraph">
+                    Happy searching! 🚀
                 </p>
             </section>
         </article>
